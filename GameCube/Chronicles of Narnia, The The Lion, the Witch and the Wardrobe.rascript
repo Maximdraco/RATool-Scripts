@@ -3,25 +3,75 @@
 // RA Hash = 380582e0d15d448f212a96cb2aba111b (USA version)
 
 // == Variables ========
-
-// 0x36d648: [9 Bytes] Cheats, the first byte change to 0 after pressing the last button.
-
-// 0x4deb7b: [8 Bits] Can be used for screen check (previous screen)
+// 0x4deb7b: [8 Bits] Can be used for screen check
 // 00 = Just starting the game
+// FF = In game and select level screen
 
 // 0x4e1f80: Difficulty, 01 = Hard
-Difficulty_Check = disable_when(prev(byte(0x4e1f80)) == 1 && byte(0x4e1f80) == 0,
-                                until=byte(0x4deb7b) == 0 || byte(0x4deb7b) == 0x08 ||
-                                byte(0x4deb7b) == 0x0e || byte(0x4deb7b) == 0xf4 ||
-                                byte(0x4deb7b) == 0xf5) && byte(0x4e1f80) == 1
-
+Difficulty_Check = disable_when(
+                               prev(byte(0x4e1f80)) == 1 && byte(0x4e1f80) == 0,
+                               until=byte(0x4deb7b) == 0||
+                               byte(0x4deb7b) == 0x08 ||
+                               byte(0x4deb7b) == 0x0e ||
+                               byte(0x4deb7b) == 0xf4 ||
+                               byte(0x4deb7b) == 0xf5
+                               ) &&
+                               disable_when(
+                               byte(0x4e1f80) == 0 &&
+                               byte(0x4deb7b) == 255,
+                               until=byte(0x4deb7b) == 0||
+                               byte(0x4deb7b) == 0x08 ||
+                               byte(0x4deb7b) == 0x0e ||
+                               byte(0x4deb7b) == 0xf4 ||
+                               byte(0x4deb7b) == 0xf5
+                               )
+                               
 // Save protection, it use the screen ID
 Save_Protection = prev(byte(0x4deb7b)) != 0xf4 && prev(byte(0x4deb7b)) != 0xf5
 
-general_reset = byte(0x004deb7b) == 0
+// Reset all hit counts when the game resets
+reset = byte(0x004deb7b) == 0
 
+// Create all groups so the reset can't be paused
+general_reset = (
+                never(reset) ||
+                (repeated(100, always_true()))
+                )
+
+// Checks if the player is on the level complete screen
 level_completed = (prev(byte(0x002468b7)) != 68 && byte(0x002468b7) == 68)
 
+level_names = ["The Air Raid",
+               "Glimpse of Narnia",
+               "The Spare Room",
+               "Lantern Waste",
+               "To Western Wood",
+               "Beaver Dam",
+               "Through the Tunnel",
+               "Frozen Lake",
+               "The Great River",
+               "Rescue Edmund",
+               "Follow Aslan",
+               "Battle of Beruna",
+               "The Witch's Castle",
+               "The Great Battle",
+               "The White Witch"]
+
+achievement_titles = ["To Western Wood Again",
+                      "Return to Allies Enclave",
+                      "The Winter is back",
+                      "Another Great River",
+                      "Stealth Mission",
+                      "The Witch's Second Castle"]
+                          
+bonus_level_names = ["To Western Wood",
+                     "Allies Enclave",
+                     "Frozen Lake",
+                     "The Great River",
+                     "Follow Aslan",
+                     "The Witch's Castle"]
+
+// 0x36d648: [9 Bytes] Cheats, the first byte change to 0 after pressing the last button.
 AntiCheats =(
     // Unlock All Bonus Levels = 64 64 72 72 64 72 75
     disable_when(
@@ -259,182 +309,250 @@ Lucy_Skill = (
 
 // === Functions =============
 
-function collecting_statues_achievements(stage_name, starting_addres, amount_of_statues){
+function collecting_statues_achievements(stage_name, starting_address, amount_of_statues){
     
-    statues = byte(starting_addres)
-    prev_statues = prev(byte(starting_addres))
+    // First address with the statue flags
+    statues = byte(starting_address)
     
+    // Same as above but with prev() for the delta AddSource chain
+    prev_statues = prev(byte(starting_address))
+    
+    // Cicle to create the AddSource chain for the statues flags
     for index in range(0x01, amount_of_statues-1){
-        statues = statues + byte(starting_addres+index)
-        prev_statues =prev_statues + prev(byte(starting_addres+index))
+    
+        statues = statues + byte(starting_address+index)
+        
+        prev_statues =prev_statues + prev(byte(starting_address+index))
     }
-
+    // ------------------------------------------------------------------
     achievement(
         title = "Finding statues in " + stage_name,
         description = "Collect all statues in \"" + stage_name + "\".",
         points = 3,
         type = "",
-        trigger = (AntiCheats && Save_Protection && level_completed &&
-                  (prev_statues) == amount_of_statues-1 &&
-                  (statues) == amount_of_statues)
-                  && (never(general_reset) || (repeated(100, always_true())))
+        trigger = (
+                  prev_statues == amount_of_statues-1 &&
+                  statues == amount_of_statues &&
+                  level_completed &&
+                  Save_Protection &&
+                  AntiCheats
+                  )
+                  && general_reset
     )
+    // ------------------------------------------------------------------
 }
 
 // === Achievements =========
 
-// Warning achievement
+// Warning achievement ----------------------------------------------
 achievement(
     title = "WARNING!",
-    description = "None of the achievements will trigger if you use any cheat, and don't change the difficulty inside the levels.",
+    description = "None of the achievements will trigger if you use any cheat, and only change the difficulty in the title screen.",
     points = 0,
     type = "",
     trigger = (repeated(100, always_true()))
 )
+// ------------------------------------------------------------------
 
 // Main achievements and they hard mode version
-level_names = ["The Air Raid", "Glimpse of Narnia", "The Spare Room",
-                   "Lantern Waste", "To Western Wood", "Beaver Dam",
-                   "Through the Tunnel", "Frozen Lake", "The Great River",
-                   "Rescue Edmund", "Follow Aslan", "Battle of Beruna",
-                   "The Witch's Castle", "The Great Battle", "The White Witch"]
-                   
+
+// Cicle to create the main achievements of the set
 for index in range(0, 14) {
+
     // Aditional variables
     level_id = (byte(0x00484e23) == index)
         
     // Normal achievements
     if index != 14{
+        // ------------------------------------------------------------------
         achievement(
             title = level_names[index],
-            description = "Complete \""+level_names[index]+"\".",
+            description = "Complete \"" + level_names[index] + "\".",
             points = 5,
             type = "progression",
-            trigger = (level_id && level_completed && AntiCheats && Save_Protection) &&
-                      (never(general_reset) || (repeated(100, always_true())))
+            trigger = (
+                      level_id &&
+                      level_completed &&
+                      Save_Protection &&
+                      AntiCheats
+                      )
+                      && general_reset
         )
+        // ------------------------------------------------------------------
     } else {
+        // ------------------------------------------------------------------
         achievement(
             title = level_names[index],
-            description = "Complete \""+level_names[index]+"\".",
+            description = "Complete \"" + level_names[index] + "\".",
             points = 5,
             type = "win_condition",
-            trigger = (level_id && level_completed && AntiCheats && Save_Protection) &&
-                      (never(general_reset) || (repeated(100, always_true())))
+            trigger = (
+                      level_id &&
+                      level_completed &&
+                      Save_Protection &&
+                      AntiCheats
+                      )
+                      && general_reset
         )
+        // ------------------------------------------------------------------
     }
-        
-    // Hard mode achievements
+    // Hard mode achievements ---------------------------------------------
     achievement(
         title = level_names[index] + " [Hard]",
-        description = "Complete \""+level_names[index]+"\" on Hard difficulty.",
+        description = "Complete \"" + level_names[index] + "\" on Hard difficulty.",
         points = 5,
         type = "",
-        trigger = (level_id && level_completed && AntiCheats && Save_Protection && Difficulty_Check) &&
-                      (never(general_reset) || (repeated(100, always_true())))
+        trigger = (
+                  level_id &&
+                  level_completed &&
+                  Difficulty_Check &&
+                  Save_Protection &&
+                  AntiCheats
+                  )
+                  && general_reset
     )
+    // ------------------------------------------------------------------
 }
 
 // Achievements for the Bonus levels
-    achievement_titles = ["To Western Wood Again", "Return to Allies Enclave", "The Winter is back",
-                          "Another Great River", "Stealth Mission", "The Witch's Second Castle"]
-    bonus_level_names = ["\"To Western Wood\"",  "\"Allies Enclave\"", "\"Frozen Lake\"",
-                   "\"The Great River\"", "\"Follow Aslan\"", "\"The Witch's Castle\""]
-    
-    for index in range(0, 5) {
-        // Aditional variables
-        level_id = (byte(0x00484e23) == (index+15))
-        
-        achievement(
-            title = achievement_titles[index],
-            description = "Complete the bonus level "+bonus_level_names[index]+".",
-            points = 5,
-            type = "",
-            trigger = (level_id && level_completed && AntiCheats && Save_Protection) &&
-                      (never(general_reset) || (repeated(100, always_true())))
-        )
-        
-        achievement(
-            title = achievement_titles[index] + " [Hard]",
-            description = "Complete the bonus level "+bonus_level_names[index]+" on Hard difficulty.",
-            points = 5,
-            type = "",
-            trigger = (level_id && level_completed && AntiCheats && Save_Protection && Difficulty_Check) &&
-                      (never(general_reset) || (repeated(100, always_true())))
-        )
-    }
+for index in range(0, 5) {
 
-// Achievements for unlocking all skills
+    // Aditional variables
+    level_id = (byte(0x00484e23) == (index+15))
+    
+    // Normal difficulty achievements ------------------------------------
+    achievement(
+        title = achievement_titles[index],
+        description = "Complete the bonus level \"" + bonus_level_names[index] + "\".",
+        points = 5,
+        type = "",
+        trigger = (
+                  level_id &&
+                  level_completed &&
+                  Save_Protection &&
+                  AntiCheats
+                  )
+                  && general_reset
+    )
+    // Hard difficulty achievements ------------------------------------
+    achievement(
+        title = achievement_titles[index] + " [Hard]",
+        description = "Complete the bonus level \"" + bonus_level_names[index] + "\" on Hard difficulty.",
+        points = 5,
+        type = "",
+        trigger = (
+                  level_id &&
+                  level_completed &&
+                  Difficulty_Check &&
+                  Save_Protection &&
+                  AntiCheats
+                  )
+                  && general_reset
+    )
+    // ------------------------------------------------------------------
+}
+
+// Achievements for unlocking all skills - Pete----------------------
 achievement(
     title = "High King Peter the Magnificent",
     description = "Unlock all of Pete's skills.",
     points = 5,
     type = "",
-    trigger = (AntiCheats && Save_Protection && Pete_Skill) && (never(general_reset) || (repeated(100, always_true())))
+    trigger = (Pete_Skill && Save_Protection && AntiCheats) && general_reset
 )
-
+// Susan ------------------------------------------------------------
 achievement(
     title = "Queen Susan the Gentle",
     description = "Unlock all of Susan's skills.",
     points = 5,
     type = "",
-    trigger = (AntiCheats && Save_Protection && Susan_Skill) && (never(general_reset) || (repeated(100, always_true())))
+    trigger = (Susan_Skill && Save_Protection && AntiCheats) && general_reset
 )
-
+// Edmund -----------------------------------------------------------
 achievement(
     title = "King Edmund the Just",
     description = "Unlock all of Edmund's skills.",
     points = 5,
     type = "",
-    trigger = (AntiCheats && Save_Protection && Edmund_Skill) && (never(general_reset) || (repeated(100, always_true())))
+    trigger = (Edmund_Skill && Save_Protection && AntiCheats) && general_reset
 )
-
+// Lucy -------------------------------------------------------------
 achievement(
     title = "Queen Lucy the Valiant",
     description = "Unlock all of Lucy's skills.",
     points = 5,
     type = "",
-    trigger = (AntiCheats && Save_Protection && Lucy_Skill) && (never(general_reset) || (repeated(100, always_true())))
+    trigger = (Lucy_Skill && Save_Protection && AntiCheats) && general_reset
 )
+// ------------------------------------------------------------------
 
-// No reinforcement achievements
+// No reinforcement achievements ------------------------------------
 achievement(
     title = "No Reinforcement Needed",
     description = "Complete \"The Great Battle\" without using statues.",
     points = 5,
     type = "",
-    trigger = (AntiCheats && Save_Protection && level_completed && byte(0x00484e23) == 13 && byte(0x004e09db) == byte(0x004e09df))
-              && (never(general_reset) || (repeated(100, always_true())))
+    trigger = (
+              AntiCheats &&
+              Save_Protection &&
+              level_completed && 
+              byte(0x00484e23) == 13 && // Level ID
+              byte(0x004e09db) == byte(0x004e09df) // Statues not used in The Great Battle = Total of statues to use in The Great Battle
+              ) && general_reset
 )
-
+// No reinforcement achievements Hard difficulty --------------------
 achievement(
     title = "No Reinforcement Needed [Hard]",
     description = "Complete \"The Great Battle\" on Hard difficulty without using statues.",
     points = 5,
     type = "",
-    trigger = AntiCheats && Save_Protection && level_completed && Difficulty_Check && byte(0x00484e23) == 13 && byte(0x004e09db) == byte(0x004e09df)
-              && (never(general_reset) || (repeated(100, always_true())))
+    trigger = (
+              AntiCheats &&
+              Save_Protection &&
+              level_completed &&
+              Difficulty_Check &&
+              byte(0x00484e23) == 13 && // Level ID
+              byte(0x004e09db) == byte(0x004e09df) // Statues not used in The Great Battle = Total of statues to use in The Great Battle
+              ) && general_reset
 )
+// ------------------------------------------------------------------
 
 // Achievements for collecting shields
 for index in range(0, 14) {
+
     // Aditional variables
-    shields_addres = [0x0049c513, 0x0049c517, 0x0049c51b,
-                      0x0049c51f, 0x0049c523, 0x0049c527,
-                      0x0049c52b, 0x0049c52f, 0x0049c533,
-                      0x0049c537, 0x0049c53b, 0x0049c53f,
-                      0x0049c543, 0x0049c547, 0x0049c54b]
+    shields_address = [0x0049c513,
+                       0x0049c517,
+                       0x0049c51b,
+                       0x0049c51f,
+                       0x0049c523,
+                       0x0049c527,
+                       0x0049c52b,
+                       0x0049c52f,
+                       0x0049c533,
+                       0x0049c537,
+                       0x0049c53b,
+                       0x0049c53f,
+                       0x0049c543,
+                       0x0049c547,
+                       0x0049c54b]
                       
-    amount_of_shield = [21, 5, 16, 15, 14, 4, 13, 7, 16, 10, 12, 6,
-                        5, 7, 5]
+    amount_of_shield = [21, 5, 16, 21, 29, 4, 13, 7, 16, 10, 12, 6, 5, 7, 5]
+    
+    // ------------------------------------------------------------------
     achievement(
         title = "Gathering shields in " + level_names[index],
         description = "Collect all shields in \"" + level_names[index] + "\".",
         points = 3,
         type = "",
-        trigger = (prev(byte(shields_addres[index])) == amount_of_shield[index]-1 && byte(shields_addres[index]) == amount_of_shield[index]
-                  && AntiCheats && Save_Protection) && (never(general_reset) || (repeated(100, always_true())))
+        trigger = (
+                  prev(byte(shields_address[index])) == amount_of_shield[index]-1 &&
+                  byte(shields_address[index]) == amount_of_shield[index] &&
+                  Save_Protection &&
+                  AntiCheats
+                  ) && general_reset
     )
+    // ------------------------------------------------------------------
 }
 
 // Achievements for collecting statues

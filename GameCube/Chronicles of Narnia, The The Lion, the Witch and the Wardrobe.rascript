@@ -69,10 +69,10 @@ Level_complete_screen = [byte(0x2478d7), // Germany
 // Difficulty
 // 0x00 = Normal
 // 0x01 = Hard
-Difficulty = [byte(0x4e3144), // Germany
-              byte(0x4e1f80), // USA
-              byte(0x4e3104), // France
-              byte(0x4e2e44)] // Europe
+Difficulty = [byte(0x49b7f0), // Germany
+              byte(0x49a670), // USA
+              byte(0x49b7b0), // France
+              byte(0x49b4f0)] // Europe
 
 // Level ID
 Level_ID = [byte(0x485fa3), // Germany
@@ -202,7 +202,7 @@ function Level_ID(region, value) => (Level_ID[region] == value)
 function Screen_ID(region, value) => (Screen_ID[region] == value)
 
 // This logic is to reset all hit counts when the player reset the game
-function Game_reseted(region){return(Screen_ID(region, 0x00))}
+function Game_reseted(region){return(Screen_ID(region, 0x00) || Screen_ID(region, 0x08))}
 
 function Normal_mode(region){
     return(
@@ -221,8 +221,6 @@ function Hard_mode(region){
     )
 }
 
-function Save_protection(region) => (PauseIf(PriorE(Screen_ID[region], 0xf5)))
-
 function Statues_check_Great_Battle(region) {
     return (Statues_not_used_in_Great_Battle[region] == Total_of_statues_in_Great_Battle[region])
 }
@@ -231,7 +229,7 @@ function Shield_counter(region, level_ID){
     Shield_address = byte(Starting_shields_address[region]+(0x04*level_ID))
     
     return(DeltaE(Shield_address, Amount_of_shield[level_ID]-1)
-           && byte(Shield_address) == Amount_of_shield[level_ID]
+           && Shield_address == Amount_of_shield[level_ID]
     )
 }
 
@@ -415,7 +413,6 @@ function Shield_achievements_logic(region, level_ID){
     return(
         Shield_counter(region, level_ID) &&
         Region_ID_check(region) &&
-        Save_protection(region) &&
         AntiCheat(region)
     )
 }
@@ -436,7 +433,6 @@ function Shield_achievements(level_ID){
 
 function Character_skills_logic(character, region){
     Base_logic = Region_ID_check(region) &&
-                 Save_protection(region) &&
                  AntiCheat(region)
 
     if (character == "Pete"){
@@ -447,19 +443,19 @@ function Character_skills_logic(character, region){
     }
     if (character == "Susan"){
         return(AddSourceChain(Susan_Skills(region)) &&
-               AddSourceDeltaChain(Pete_Skills(region)) &&
+               AddSourceDeltaChain(Susan_Skills(region)) &&
                Base_logic
         )
     }
     if (character == "Edmund"){
         return(AddSourceChain(Edmund_Skills(region)) &&
-               AddSourceDeltaChain(Pete_Skills(region)) &&
+               AddSourceDeltaChain(Edmund_Skills(region)) &&
                Base_logic
         )
     }
     if (character == "Lucy"){
         return(AddSourceChain(Lucy_Skills(region)) &&
-               AddSourceDeltaChain(Pete_Skills(region)) &&
+               AddSourceDeltaChain(Lucy_Skills(region)) &&
                Base_logic
         )
     }
@@ -486,7 +482,6 @@ function Statue_logic(region, level){
     return (Statues_chain &&
             Region_ID_check(region) &&
             Delta_statues_chain &&
-            Save_protection(region) &&
             AntiCheat(region)
     )
 }
@@ -509,7 +504,7 @@ function collecting_statues_achievements(level){
 // Warning achievement
 achievement(
     title = "WARNING!",
-    description = "None of the achievements will trigger if you use any cheat, and only change the difficulty in the title screen, reset the game if you played any level on Normal.",
+    description = "None of the achievements will trigger if you use any cheat, and to change from Normal to Hard you will have to start a new game in Hard or change from Normal to Hard in game, beat a level, save and reset the game.",
     points = 0,
     type = "",
     trigger = (repeated(100, always_true()))

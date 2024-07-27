@@ -12,6 +12,14 @@ function DeltaS(address, value) {return (prev(address) < value)}
 function DeltaBE(address, value) {return (prev(address) >= value)}
 function DeltaSE(address, value) {return (prev(address) <= value)}
 
+// Priors
+function PriorE(address, value) {return (prior(address) == value)}
+function PriorNE(address, value) {return (prior(address) != value)}
+function PriorB(address, value) {return (prior(address) > value)}
+function PriorS(address, value) {return (prior(address) < value)}
+function PriorBE(address, value) {return (prior(address) >= value)}
+function PriorSE(address, value) {return (prior(address) <= value)}
+
 // ResetIf
 function ResetIf(logic) {return (never(logic))}
 
@@ -20,7 +28,7 @@ function PauseIf(logic) {return (unless(logic))}
 function PauseIfUntil(logic) {disable_when(logic, until=always_false())}
 function PauseIfUntil(logic, Until) {disable_when(logic, until=Until)}
 
-// AddSource
+// AddSource chain
 function AddSourceChain(array) {
     return_logic = array[0]
     for index in range(1, length(array)-1) {
@@ -39,72 +47,79 @@ function AddSourceDeltaChain(array) {
     return (return_logic == length(array)-1)
 }
 
-// == Code Notes ========
-// Level complete screen
-Level_complete_screen = byte(0x2468b7)
-function Level_complete_screen(value) => (Level_complete_screen == value)
-// 0x44 = Level complete screen
+// == Variables ==
+Germany = 0
+USA = 1
+France = 2
+Europe = 3
 
+// Regional indicator
+Region_ID = byte(0x0003)
+
+// Level complete screen
+// 0x44 = Level complete screen
+Level_complete_screen = [byte(0x2478d7), // Germany
+                         byte(0x2468b7), // USA
+                         byte(0x247877), // France
+                         byte(0x2475d7)] // Europe
+                         
 // Difficulty
-Difficulty = byte(0x4e1f80)
-function Difficulty(value) => (Difficulty == value)
 // 0x00 = Normal
 // 0x01 = Hard
+Difficulty = [byte(0x4e3144), // Germany
+              byte(0x4e1f80), // USA
+              byte(0x4e3104), // France
+              byte(0x4e2e44)] // Europe
 
 // Level ID
-Level_ID = byte(0x00484e23)
-function Level_ID(value) => (Level_ID == value)
-
+Level_ID = [byte(0x485fa3), // Germany
+            byte(0x484e23), // USA
+            byte(0x485f63), // France
+            byte(0x485ca3)] // Europe
+            
 // Screen IDs
-Screen_ID = byte(0x4deb7b)
-function Screen_ID(value) => (Screen_ID == value)
 // 0x00 = Starting the game
 // 0x08 = Title Screen (intro custscene)
 // 0x0e = Title Screen (options)
 // 0xf4 = Load save screen
 // 0xf5 = Confirm load save screen
 // 0xff = Game and level select screen
+Screen_ID = [byte(0x4dfd3b), // Germany
+             byte(0x4deb7b), // USA
+             byte(0x4dfcfb), // France
+             byte(0x4dfa3b)] // Europe
+            
+// Statues in the Great Battle
+Statues_not_used_in_Great_Battle = [byte(0x4e1ba3), // Germany
+                                    byte(0x4e09db), // USA
+                                    byte(0x4e1b63), // France
+                                    byte(0x4e18a3)] // Europe
 
-Blocked_screens = (Screen_ID(0x00) ||
-                   Screen_ID(0x08) ||
-                   Screen_ID(0x0e) ||
-                   Screen_ID(0xf4) ||
-                   Screen_ID(0xf5) ||
-                   Screen_ID(0xf6))
-
-Changed_difficulty = DeltaNE(Difficulty, 0x01) && Difficulty(0x00)
-
-Difficulty_check = PauseIfUntil(Changed_difficulty, Blocked_screens) && Difficulty(0x01)
-         
-Save_protection = (once(prior(Screen_ID) == 0xf6))
-
-// Create alt groups so the reset can't be paused
-reset = ResetIf(Screen_ID(0x00)) || ResetIf(Screen_ID(0x0e)) || (repeated(100, always_true()))
-
-Level_complete_check = DeltaNE(Level_complete_screen, 0x44) && Level_complete_screen(0x44)
-
-// Statues
-Statues_not_used_in_Great_Battle = byte(0x004e09db)
-Total_of_statues_in_Great_Battle = byte(0x004e09df)
-
+Total_of_statues_in_Great_Battle = [byte(0x4e1ba7), // Germany
+                                    byte(0x4e09df), // USA
+                                    byte(0x4e1b67), // France
+                                    byte(0x4e18a7)] // Europe
+                                    
 // Shields
-shields_address = [0x0049c513, 0x0049c517, 0x0049c51b,
-                   0x0049c51f, 0x0049c523, 0x0049c527,
-                   0x0049c52b, 0x0049c52f, 0x0049c533,
-                   0x0049c537, 0x0049c53b, 0x0049c53f,
-                   0x0049c543, 0x0049c547, 0x0049c54b]
+// Each shield counter address is +0x04 from the previous one until level ID 0x00 to 0x0e
+Starting_shields_address = [0x49d693, // Germany
+                            0x49c513, // USA
+                            0x49d653, // France
+                            0x49d393] // Europe
                       
-amount_of_shield = [21, 5, 16, 21, 29, 4, 13, 7, 16, 10, 12, 6, 5, 7, 5]
+Amount_of_shield = [21, 5, 16, 21, 29, 4, 13, 7, 16, 10, 12, 6, 5, 7, 5]
 
 // Cheats
 Down = 0x64 // Cheat input Down
 Left = 0x6c // Cheat input Left
 Right = 0x72 // Cheat input Right
 Up = 0x75 // Cheat input Up
-Starting_cheat_input_address = 0x36d648
-function cheat_input(address, value) => (byte(address) == value)
-
-// Serie of inputs
+Starting_cheat_input_address = [0x36e7c8, // Germany
+                                0x36d648, // USA                            
+                                0x36e788, // France
+                                0x36e4c8] // Europe
+                                
+// List of cheat inputs
 Unlock_all_bonus_level = [Down, Down, Right, Right, Down, Right, Up]
 Unlock_all_abilities = [Down, Left, Right, Left, Up]
 Restore_heal = [Down, Left, Left, Right]
@@ -114,107 +129,31 @@ Fill_combo_meter = [Up, Up, Right, Up]
 Automatically_complete_level = [Down, Left, Down, Left, Down, Right, Down, Right, Up]
 Cheat_mode = [Down, Down, Right, Up]
 
-function Cheat(array){
-    i = byte(Starting_cheat_input_address)
-    cheat = DeltaE(i, array[0])
-    for index in range(1, length(array)-1) {
-        cheat = cheat && cheat_input(Starting_cheat_input_address + index, array[index])
-    }
-    return cheat
-}
+Pete_skills_starting_address = [0x49ba3d, // Germany
+                                0x49a8bd, // USA
+                                0x49b9fd, // France
+                                0x49b73d] // Europe
+                                
+Susan_skills_starting_address = [0x49ba40, // Germany
+                                 0x49a8c0, // USA
+                                 0x49ba00, // France
+                                 0x49b740] // Europe
+                                 
+Edmund_skills_starting_address = [0x49ba44, // Germany
+                                  0x49a8c4, // USA
+                                  0x49ba04, // France
+                                  0x49b744] // Europe
+                                  
+Lucy_skills_starting_address = [0x49ba48, // Germany
+                                0x49a8c8, // USA
+                                0x49ba08, // France
+                                0x49b748] // Europe
 
-AntiCheats = PauseIfUntil(Cheat(Unlock_all_bonus_level), Screen_ID(0x00)) &&
-             PauseIfUntil(Cheat(Unlock_all_abilities), Screen_ID(0x00)) &&
-             PauseIfUntil(Cheat(Restore_heal), Screen_ID(0x00)) &&
-             PauseIfUntil(Cheat(Get_coins), Screen_ID(0x00)) &&
-             PauseIfUntil(Cheat(Open_all_levels), Screen_ID(0x00)) &&
-             PauseIfUntil(Cheat(Fill_combo_meter), Screen_ID(0x00)) &&
-             PauseIfUntil(Cheat(Automatically_complete_level), Screen_ID(0x00)) &&
-             PauseIfUntil(Cheat(Cheat_mode), Screen_ID(0x00))
-
-Pete_skills = [bit0(0x49a8bd), // Bit0 = Ogre Bane (Peter and Edmund)
-               bit4(0x49a8bd), // Bit4 = Double Damage
-               bit5(0x49a8bd), // Bit5 = Gift Sword
-               bit6(0x49a8bd), // Bit6 = Team Attack (Peter and Susan)
-               bit7(0x49a8bd), // Bit7 = Blade Spinner (Peter and Edmund)
-               bit0(0x49a8be), // Bit0 = Wolf Bane (Peter and Edmund)
-               bit1(0x49a8be), // Bit1 = Lion's Leap (Peter and Edmund)
-               bit2(0x49a8be), // Bit2 = Ghoul Bane (Peter and Edmund)
-               bit3(0x49a8be), // Bit3 = Lion's Roar (Peter and Edmund)
-               bit4(0x49a8be), // Bit4 = Boogle Bane (Peter and Edmund)
-               bit5(0x49a8be), // Bit5 = Shield Slam
-               bit6(0x49a8be), // Bit6 = Minoboard Bane (Peter and Edmund)
-               bit7(0x49a8be), // Bit7 = Lion's Claw (Peter and Edmund)
-               bit0(0x49a8bf), // Bit0 = Valiant Heart (All Children)
-               bit1(0x49a8bf), // Bit1 = Brave Heart (All Children)
-               bit2(0x49a8bf), // Bit2 = Phoenix Heart (All Children)
-               bit3(0x49a8bf)] // Bit3 = Lion Heart (All Children)
-
-Susan_skills = [bit0(0x49a8c0), // Full Circle (Susan and Edmund)
-               bit5(0x49a8c1), // Rain of Fire (Susan and Lucy)
-               bit6(0x49a8c1), // Team Attack (Peter and Susan)
-               bit1(0x49a8c2), // Fast Reload
-               bit2(0x49a8c2), // Dryad's Melody
-               bit3(0x49a8c2), // Hawkspeed
-               bit4(0x49a8c2), // Stone Song
-               bit5(0x49a8c2), // Panpipes
-               bit6(0x49a8c2), // Gift Bow
-               bit7(0x49a8c2), // Ivory Horn
-               bit0(0x49a8c3), // Valiant Heart (All Children)
-               bit1(0x49a8c3), // Brave Heart (All Children)
-               bit2(0x49a8c3), // Phoenix Heart (All Children)
-               bit3(0x49a8c3)] // Lion Heart (All Children)
-
-Edmund_skills = [bit0(0x49a8c4), // Full Circle (Susan and Edmund)
-                 bit0(0x49a8c5), // Ogre Bane (Peter and Edmund)
-                 bit4(0x49a8c5), // Shield Shower (Edmund and Lucy)
-                 bit7(0x49a8c5), // Blade Spinner (Peter and Edmund)
-                 bit0(0x49a8c6), // Wolf Bane (Peter and Edmund)
-                 bit1(0x49a8c6), // Lion's Leap (Peter and Edmund)
-                 bit2(0x49a8c6), // Ghoul Bane (Peter and Edmund)
-                 bit3(0x49a8c6), // Lion's Roar (Peter and Edmund)
-                 bit4(0x49a8c6), // Boogle Bane (Peter and Edmund)
-                 bit6(0x49a8c6), // Minoboard Bane (Peter and Edmund)
-                 bit7(0x49a8c6), // Lion's Claw (Peter and Edmund)
-                 bit0(0x49a8c7), // Valiant Heart (All Children)
-                 bit1(0x49a8c7), // Brave Heart (All Children)
-                 bit2(0x49a8c7), // Phoenix Heart (All Children)
-                 bit3(0x49a8c7)] // Lion Heart (All Children)
-              
-Lucy_skills = [bit1(0x49a8c8), // Dryad's Cloak
-               bit0(0x49a8c9), // Sun Fire
-               bit1(0x49a8c9), // Boggle Tame
-               bit2(0x49a8c9), // Fire Flower Cordial
-               bit4(0x49a8c9), // Shield Shower (Edmund and Lucy)
-               bit5(0x49a8c9), // Rain of Fire (Susan and Lucy)
-               bit0(0x49a8ca), // First Aid
-               bit1(0x49a8ca), // Wolf Tame
-               bit2(0x49a8ca), // Ghoul Tame
-               bit3(0x49a8ca), // Fire Fill
-               bit4(0x49a8ca), // Minoboar Tame
-               bit5(0x49a8ca), // Double Drop
-               bit6(0x49a8ca), // Sun Speed
-               bit7(0x49a8ca), // Triple Tipple
-               bit0(0x49a8cb), // Valiant Heart (All Children)
-               bit1(0x49a8cb), // Brave Heart (All Children)
-               bit2(0x49a8cb), // Phoenix Heart (All Children)
-               bit3(0x49a8cb)] // Lion Heart (All Children)
-
-Level_names = ["The Air Raid",
-               "Glimpse of Narnia",
-               "The Spare Room",
-               "Lantern Waste",
-               "To Western Wood",
-               "Beaver Dam",
-               "Through the Tunnel",
-               "Frozen Lake",
-               "The Great River",
-               "Rescue Edmund",
-               "Follow Aslan",
-               "Battle of Beruna",
-               "The Witch's Castle",
-               "The Great Battle",
-               "The White Witch"]
+Level_names = ["The Air Raid", "Glimpse of Narnia", "The Spare Room",
+               "Lantern Waste", "To Western Wood", "Beaver Dam",
+               "Through the Tunnel", "Frozen Lake", "The Great River",
+               "Rescue Edmund", "Follow Aslan", "Battle of Beruna",
+               "The Witch's Castle", "The Great Battle", "The White Witch"]
 
 Achievement_titles_Bonus_levels = ["To Western Wood Again",
                                    "Return to Allies Enclave",
@@ -230,6 +169,338 @@ Bonus_level_names = ["To Western Wood",
                      "Follow Aslan",
                      "The Witch's Castle"]
 
+Levels_with_statues_names = ["Lantern Waste", "To Western Wood", "Beaver Damn",
+                             "Through the Tunnel", "Frozen Lake", "The Great River",
+                             "Rescue Edmund", "Follow Aslan", "Battle of Beruna"]
+
+Amount_of_statues = [10, 15, 6, 12, 12, 4, 4, 5, 4]
+
+Start_of_statues_address = [0x49bcfc, // Germany
+                            0x49ab7c, // USA
+                            0x49bcbc, // France
+                            0x49b9fc] // European
+
+// == Functions ==
+function Region_ID_check(region) {
+    if (region == 0){return(PauseIf(Region_ID != 0x44))}
+    else if (region == 1){return(PauseIf(Region_ID != 0x45))}
+    else if (region == 2){return(PauseIf(Region_ID != 0x46))}
+    else if (region == 3){return(PauseIf(Region_ID != 0x50))}
+}
+
+function Level_completed(region){
+    return(DeltaNE(Level_complete_screen[region], 0x44) && Level_complete_screen[region] == 0x44)
+}
+
+function Difficulty(region, value) => (Difficulty[region] == value)
+
+function Level_ID(region, value) => (Level_ID[region] == value)
+
+function Screen_ID(region, value) => (Screen_ID[region] == value)
+
+// This logic is to reset all hit counts when the player reset the game
+function Game_reseted(region){return(Screen_ID(region, 0x00))}
+
+function Normal_mode(region){
+    return(
+           // In game screen values, to check if the player in playing in Normal mode
+           (Screen_ID(region, 0xff) || Screen_ID(region, 0x0f))
+           && Difficulty(region, 0x00)
+    )
+}
+
+function Hard_mode(region){
+    // Pause the logic if the player is in any level on Normal difficulty
+    // and only unpause if the player reset the game
+    return(PauseIfUntil(Normal_mode(region),
+                        Game_reseted(region))
+           && Difficulty(region, 0x01)
+    )
+}
+
+function Save_protection(region) => (PauseIf(PriorE(Screen_ID[region], 0xf5)))
+
+function Statues_check_Great_Battle(region) {
+    return (Statues_not_used_in_Great_Battle[region] == Total_of_statues_in_Great_Battle[region])
+}
+
+function Shield_counter(region, level_ID){
+    Shield_address = byte(Starting_shields_address[region]+(0x04*level_ID))
+    
+    return(DeltaE(Shield_address, Amount_of_shield[level_ID]-1)
+           && byte(Shield_address) == Amount_of_shield[level_ID]
+    )
+}
+
+function cheat_input(address, value) => (byte(address) == value)
+
+function Cheat(inputs, region){
+    i = byte(Starting_cheat_input_address[region])
+    cheat = DeltaE(i, inputs[0])
+    
+    for index in range(1, length(inputs)-1) {
+        cheat = cheat && cheat_input(Starting_cheat_input_address[region]+index,
+                                     inputs[index])
+    }
+    return cheat
+}
+
+function AntiCheat(region){
+    return(
+            PauseIfUntil(Cheat(Unlock_all_bonus_level, region), Game_reseted(region))                      
+            && PauseIfUntil(Cheat(Unlock_all_abilities, region), Game_reseted(region))
+            && PauseIfUntil(Cheat(Restore_heal, region), Game_reseted(region))
+            && PauseIfUntil(Cheat(Get_coins, region), Game_reseted(region))
+            && PauseIfUntil(Cheat(Open_all_levels, region), Game_reseted(region))
+            && PauseIfUntil(Cheat(Fill_combo_meter, region), Game_reseted(region))
+            && PauseIfUntil(Cheat(Automatically_complete_level, region), Game_reseted(region))
+    )
+}
+
+function Pete_Skills(region){
+    i = Pete_skills_starting_address[region]
+    return([bit0(i), // Bit0 = Ogre Bane (Peter and Edmund)
+            bit4(i), // Bit4 = Double Damage
+            bit5(i), // Bit5 = Gift Sword
+            bit6(i), // Bit6 = Team Attack (Peter and Susan)
+            bit7(i), // Bit7 = Blade Spinner (Peter and Edmund)
+            bit0(i+0x01), // Bit0 = Wolf Bane (Peter and Edmund)
+            bit1(i+0x01), // Bit1 = Lion's Leap (Peter and Edmund)
+            bit2(i+0x01), // Bit2 = Ghoul Bane (Peter and Edmund)
+            bit3(i+0x01), // Bit3 = Lion's Roar (Peter and Edmund)
+            bit4(i+0x01), // Bit4 = Boogle Bane (Peter and Edmund)
+            bit5(i+0x01), // Bit5 = Shield Slam
+            bit6(i+0x01), // Bit6 = Minoboard Bane (Peter and Edmund)
+            bit7(i+0x01), // Bit7 = Lion's Claw (Peter and Edmund)
+            bit0(i+0x02), // Bit0 = Valiant Heart (All Children)
+            bit1(i+0x02), // Bit1 = Brave Heart (All Children)
+            bit2(i+0x02), // Bit2 = Phoenix Heart (All Children)
+            bit3(i+0x02)] // Bit3 = Lion Heart (All Children)
+    )
+
+}
+
+function Susan_Skills(region){
+    i = Susan_skills_starting_address[region]
+    return([bit0(i), // Full Circle (Susan and Edmund)
+            bit5(i+0x01), // Rain of Fire (Susan and Lucy)
+            bit6(i+0x01), // Team Attack (Peter and Susan)
+            bit1(i+0x02), // Fast Reload
+            bit2(i+0x02), // Dryad's Melody
+            bit3(i+0x02), // Hawkspeed
+            bit4(i+0x02), // Stone Song
+            bit5(i+0x02), // Panpipes
+            bit6(i+0x02), // Gift Bow
+            bit7(i+0x02), // Ivory Horn
+            bit0(i+0x03), // Valiant Heart (All Children)
+            bit1(i+0x03), // Brave Heart (All Children)
+            bit2(i+0x03), // Phoenix Heart (All Children)
+            bit3(i+0x03)] // Lion Heart (All Children)
+    )
+}
+                                  
+function Edmund_Skills(region){
+    i = Edmund_skills_starting_address[region]
+    return([bit0(i), // Full Circle (Susan and Edmund)
+            bit0(i+0x01), // Ogre Bane (Peter and Edmund)
+            bit4(i+0x01), // Shield Shower (Edmund and Lucy)
+            bit7(i+0x01), // Blade Spinner (Peter and Edmund)
+            bit0(i+0x02), // Wolf Bane (Peter and Edmund)
+            bit1(i+0x02), // Lion's Leap (Peter and Edmund)
+            bit2(i+0x02), // Ghoul Bane (Peter and Edmund)
+            bit3(i+0x02), // Lion's Roar (Peter and Edmund)
+            bit4(i+0x02), // Boogle Bane (Peter and Edmund)
+            bit6(i+0x02), // Minoboard Bane (Peter and Edmund)
+            bit7(i+0x02), // Lion's Claw (Peter and Edmund)
+            bit0(i+0x03), // Valiant Heart (All Children)
+            bit1(i+0x03), // Brave Heart (All Children)
+            bit2(i+0x03), // Phoenix Heart (All Children)
+            bit3(i+0x03)] // Lion Heart (All Children)
+    )
+}
+
+function Lucy_Skills(region){
+    i = Lucy_skills_starting_address[region]
+    return([bit1(i), // Dryad's Cloak
+            bit0(i+0x01), // Sun Fire
+            bit1(i+0x01), // Boggle Tame
+            bit2(i+0x01), // Fire Flower Cordial
+            bit4(i+0x01), // Shield Shower (Edmund and Lucy)
+            bit5(i+0x01), // Rain of Fire (Susan and Lucy)
+            bit0(i+0x02), // First Aid
+            bit1(i+0x02), // Wolf Tame
+            bit2(i+0x02), // Ghoul Tame
+            bit3(i+0x02), // Fire Fill
+            bit4(i+0x02), // Minoboar Tame
+            bit5(i+0x02), // Double Drop
+            bit6(i+0x02), // Sun Speed
+            bit7(i+0x02), // Triple Tipple
+            bit0(i+0x03), // Valiant Heart (All Children)
+            bit1(i+0x03), // Brave Heart (All Children)
+            bit2(i+0x03), // Phoenix Heart (All Children)
+            bit3(i+0x03)] // Lion Heart (All Children)
+    )
+}
+
+function Main_achievement_logic(region, difficulty, level_ID){
+    Base_logic = (Level_completed(region)
+                  && Level_ID(region, level_ID)
+                  && Region_ID_check(region)
+                  && AntiCheat(region))
+                  
+    if (difficulty == 0){return(Base_logic)}
+    else if (difficulty == 1){return(Hard_mode(region) && Base_logic)}
+}
+
+function Level_achievements(level_ID){
+    Type = "progression"
+    if (level_ID == 0x0e) {Type = "win_condition"}
+    // Normal difficulty
+    achievement(
+            title = Level_names[level_ID],
+            description = "Complete \"" + Level_names[level_ID] + "\".",
+            points = 5,
+            type = Type,
+            trigger = (Main_achievement_logic(Germany, 0, level_ID)
+                       || Main_achievement_logic(USA, 0, level_ID)
+                       || Main_achievement_logic(France, 0, level_ID)
+                       || Main_achievement_logic(Europe, 0, level_ID)
+            )
+    )
+    // Hard difficulty
+    achievement(
+        title = Level_names[level_ID] + " [Hard]",
+        description = "Complete \"" + Level_names[level_ID] + "\" on Hard difficulty.",
+        points = 5,
+        type = "",
+        trigger = (Main_achievement_logic(Germany, 1, level_ID)
+                   || Main_achievement_logic(USA, 1, level_ID)
+                   || Main_achievement_logic(France, 1, level_ID)
+                   || Main_achievement_logic(Europe, 1, level_ID)
+        )
+    )
+    // Bonus levels
+    if (0 <= level_ID) && (level_ID <= 5){
+        // Normal difficulty
+        achievement(
+            title = Achievement_titles_Bonus_levels[level_ID],
+            description = "Complete the bonus level \"" + Bonus_level_names[level_ID] + "\".",
+            points = 5,
+            type = "",
+            trigger = (Main_achievement_logic(Germany, 0, level_ID+15)
+                       || Main_achievement_logic(USA, 0, level_ID+15)
+                       || Main_achievement_logic(France, 0, level_ID+15)
+                       || Main_achievement_logic(Europe, 0, level_ID+15)
+            )
+        )
+        // Hard difficulty
+        achievement(
+            title = Achievement_titles_Bonus_levels[level_ID] + " [Hard]",
+            description = "Complete the bonus level \"" + Bonus_level_names[level_ID] + "\" on Hard difficulty.",
+            points = 5,
+            type = "",
+            trigger = (Main_achievement_logic(Germany, 1, level_ID+15)
+                       || Main_achievement_logic(USA, 1, level_ID+15)
+                       || Main_achievement_logic(France, 1, level_ID+15)
+                       || Main_achievement_logic(Europe, 1, level_ID+15)
+            )
+        )
+    }
+}
+
+function Shield_achievements_logic(region, level_ID){
+    return(
+        Shield_counter(region, level_ID) &&
+        Region_ID_check(region) &&
+        Save_protection(region) &&
+        AntiCheat(region)
+    )
+}
+
+function Shield_achievements(level_ID){
+    achievement(
+        title = "Gathering shields in " + Level_names[level_ID],
+        description = "Collect all shields in \"" + Level_names[level_ID] + "\".",
+        points = 3,
+        type = "",
+        trigger = (Shield_achievements_logic(Germany, level_ID) ||
+                   Shield_achievements_logic(USA, level_ID) ||
+                   Shield_achievements_logic(France, level_ID) ||
+                   Shield_achievements_logic(Europe, level_ID)
+        )
+    )
+}
+
+function Character_skills_logic(character, region){
+    Base_logic = Region_ID_check(region) &&
+                 Save_protection(region) &&
+                 AntiCheat(region)
+
+    if (character == "Pete"){
+        return(AddSourceChain(Pete_Skills(region)) &&
+               AddSourceDeltaChain(Pete_Skills(region)) &&
+               Base_logic
+        )
+    }
+    if (character == "Susan"){
+        return(AddSourceChain(Susan_Skills(region)) &&
+               AddSourceDeltaChain(Pete_Skills(region)) &&
+               Base_logic
+        )
+    }
+    if (character == "Edmund"){
+        return(AddSourceChain(Edmund_Skills(region)) &&
+               AddSourceDeltaChain(Pete_Skills(region)) &&
+               Base_logic
+        )
+    }
+    if (character == "Lucy"){
+        return(AddSourceChain(Lucy_Skills(region)) &&
+               AddSourceDeltaChain(Pete_Skills(region)) &&
+               Base_logic
+        )
+    }
+}
+
+function No_reinforcement_logic(region){
+    return(Region_ID_check(region) &&
+           Level_ID(region, 13) &&
+           Level_completed(region) &&
+           Statues_check_Great_Battle(region) &&
+           AntiCheat(region)
+    )
+}
+
+function Statue_logic(region, level){
+    starting_address = Start_of_statues_address[region] + (0x40*level)
+    Statues = [bit0(starting_address)]
+    
+    for index in range(0x01, Amount_of_statues[level]-1){array_push(Statues, bit0(starting_address + index))}
+    
+    Statues_chain = AddSourceChain(Statues)
+    Delta_statues_chain = AddSourceDeltaChain(Statues)
+    
+    return (Statues_chain &&
+            Region_ID_check(region) &&
+            Delta_statues_chain &&
+            Save_protection(region) &&
+            AntiCheat(region)
+    )
+}
+
+function collecting_statues_achievements(level){
+    achievement(
+        title = "Finding statues in " + Levels_with_statues_names[level],
+        description = "Collect all statues in \"" + Levels_with_statues_names[level] + "\".",
+        points = 3,
+        type = "",
+        trigger = Statue_logic(Germany, level) ||
+                  Statue_logic(USA, level) ||
+                  Statue_logic(France, level) ||
+                  Statue_logic(Europe, level)
+    )
+}
+
 // === Achievements =========
 
 // Warning achievement
@@ -241,83 +512,13 @@ achievement(
     trigger = (repeated(100, always_true()))
 )
 
-// Cicle to create the main achievements of the set
+// Main and shield achievements
 for index in range(0x00, 0x0e) {
-    // Normal difficulty achievements
-    if index != 0x0e{
-        achievement(
-            title = Level_names[index],
-            description = "Complete \"" + Level_names[index] + "\".",
-            points = 5,
-            type = "progression",
-            trigger = (Level_ID(index) &&
-                       Level_complete_check &&
-                       Save_protection &&
-                       AntiCheats) && reset
-        )
-    } else {
-        achievement(
-            title = Level_names[index],
-            description = "Complete \"" + Level_names[index] + "\".",
-            points = 5,
-            type = "win_condition",
-            trigger = (Level_ID(index) &&
-                       Level_complete_check &&
-                       Save_protection &&
-                       AntiCheats) && reset
-        )
-    }
-    // Hard mode achievements
-    achievement(
-        title = Level_names[index] + " [Hard]",
-        description = "Complete \"" + Level_names[index] + "\" on Hard difficulty.",
-        points = 5,
-        type = "",
-        trigger = (Level_ID(index) &&
-                   Level_complete_check &&
-                   Difficulty_check &&
-                   Save_protection &&
-                   AntiCheats) && reset
-    )
-    
+    // Main achievements
+    Level_achievements(index)
     // Shield achievements
-    achievement(
-        title = "Gathering shields in " + Level_names[index],
-        description = "Collect all shields in \"" + Level_names[index] + "\".",
-        points = 3,
-        type = "",
-        trigger = (DeltaE(byte(shields_address[index]), amount_of_shield[index]-1) &&
-                   byte(shields_address[index]) == amount_of_shield[index] &&
-                   Save_protection &&
-                   AntiCheats) && reset
-    )
-}
+    Shield_achievements(index)
 
-// Achievements for the Bonus levels
-for index in range(0, 5) {
-    // Normal difficulty achievements
-    achievement(
-        title = Achievement_titles_Bonus_levels[index],
-        description = "Complete the bonus level \"" + Bonus_level_names[index] + "\".",
-        points = 5,
-        type = "",
-        trigger = (Level_ID(index+15) &&
-                   Level_complete_check &&
-                   Save_protection &&
-                   AntiCheats) && reset
-    )
-    // Hard difficulty achievements
-    achievement(
-        title = Achievement_titles_Bonus_levels[index] + " [Hard]",
-        description = "Complete the bonus level \"" + Bonus_level_names[index] + "\" on Hard difficulty.",
-        points = 5,
-        type = "",
-        trigger = (Level_ID(index+15) &&
-                   Level_complete_check &&
-                   Difficulty_check &&
-                   Save_protection &&
-                   AntiCheats) && reset
-    )
 }
 
 // Achievements for unlocking all skills - Pete
@@ -326,7 +527,11 @@ achievement(
     description = "Unlock all of Pete's skills.",
     points = 5,
     type = "",
-    trigger = (AddSourceChain(Pete_skills) && AddSourceDeltaChain(Pete_skills) && Save_protection && AntiCheats) && reset
+    trigger = (Character_skills_logic("Pete", Germany) ||
+               Character_skills_logic("Pete", USA) ||
+               Character_skills_logic("Pete", France) ||
+               Character_skills_logic("Pete", Europe)
+    )
 )
 // Susan
 achievement(
@@ -334,7 +539,11 @@ achievement(
     description = "Unlock all of Susan's skills.",
     points = 5,
     type = "",
-    trigger = (AddSourceChain(Susan_skills) && AddSourceDeltaChain(Susan_skills) && Save_protection && AntiCheats) && reset
+    trigger = (Character_skills_logic("Susan", Germany) ||
+               Character_skills_logic("Susan", USA) ||
+               Character_skills_logic("Susan", France) ||
+               Character_skills_logic("Susan", Europe)
+    )
 )
 // Edmund
 achievement(
@@ -342,7 +551,11 @@ achievement(
     description = "Unlock all of Edmund's skills.",
     points = 5,
     type = "",
-    trigger = (AddSourceChain(Edmund_skills) && AddSourceDeltaChain(Edmund_skills) && Save_protection && AntiCheats) && reset
+    trigger = (Character_skills_logic("Edmund", Germany) ||
+               Character_skills_logic("Edmund", USA) ||
+               Character_skills_logic("Edmund", France) ||
+               Character_skills_logic("Edmund", Europe)
+    )
 )
 // Lucy
 achievement(
@@ -350,7 +563,11 @@ achievement(
     description = "Unlock all of Lucy's skills.",
     points = 5,
     type = "",
-    trigger = (AddSourceChain(Lucy_skills) && AddSourceDeltaChain(Lucy_skills) && Save_protection && AntiCheats) && reset
+    trigger = (Character_skills_logic("Lucy", Germany) ||
+               Character_skills_logic("Lucy", USA) ||
+               Character_skills_logic("Lucy", France) ||
+               Character_skills_logic("Lucy", Europe)
+    )
 )
 
 // No reinforcement achievements
@@ -359,11 +576,11 @@ achievement(
     description = "Complete \"The Great Battle\" without using statues.",
     points = 5,
     type = "",
-    trigger = (Level_ID(13) &&
-              AntiCheats &&
-              Save_protection &&
-              Level_complete_check && 
-              Statues_not_used_in_Great_Battle == Total_of_statues_in_Great_Battle) && reset
+    trigger = (No_reinforcement_logic(Germany) ||
+               No_reinforcement_logic(USA) ||
+               No_reinforcement_logic(France) ||
+               No_reinforcement_logic(Europe)
+    )
 )
 // No reinforcement achievements Hard difficulty
 achievement(
@@ -371,42 +588,16 @@ achievement(
     description = "Complete \"The Great Battle\" on Hard difficulty without using statues.",
     points = 5,
     type = "",
-    trigger = (Level_ID(13) &&
-               AntiCheats &&
-               Save_protection &&
-               Level_complete_check &&
-               Difficulty_check &&
-               Statues_not_used_in_Great_Battle == Total_of_statues_in_Great_Battle) && reset
+    trigger = ((Hard_mode(Germany) && No_reinforcement_logic(Germany)) ||
+               (Hard_mode(USA) && No_reinforcement_logic(USA)) ||
+               (Hard_mode(France) && No_reinforcement_logic(France)) ||
+               (Hard_mode(Europe) && No_reinforcement_logic(Europe))
+    )
 )
 
 // Achievements for collecting statues
-
-function collecting_statues_achievements(Stage_name, Starting_address, Amount_of_statues){
-    Statues = [bit0(Starting_address)]
-    for index in range(0x01, Amount_of_statues-1){
-        array_push(Statues, bit0(Starting_address+index))
-    }
-    Statues_chain = AddSourceChain(Statues)
-    Delta_statues_chain = AddSourceDeltaChain(Statues)
-
-    achievement(
-        title = "Finding statues in " + Stage_name,
-        description = "Collect all statues in \"" + Stage_name + "\".",
-        points = 3,
-        type = "",
-        trigger = (Delta_statues_chain &&
-                   Statues_chain &&
-                   Save_protection &&
-                   AntiCheats) && reset
-    )
+for index in range(0, 8){
+    collecting_statues_achievements(index)
 }
 
-collecting_statues_achievements("Lantern Waste", 0x0049ab7c, 10)
-collecting_statues_achievements("To Western Wood", 0x0049abbc, 15)
-collecting_statues_achievements("Beaver Damn", 0x0049abfc, 6)
-collecting_statues_achievements("Through the Tunnel", 0x0049ac3c, 12)
-collecting_statues_achievements("Frozen Lake", 0x0049ac7c, 12)
-collecting_statues_achievements("The Great River", 0x0049acbc, 4)
-collecting_statues_achievements("Rescue Edmund", 0x0049acfc, 4)
-collecting_statues_achievements("Follow Aslan", 0x0049ad3c, 5)
-collecting_statues_achievements("Battle of Beruna", 0x0049ad7c, 4)
+

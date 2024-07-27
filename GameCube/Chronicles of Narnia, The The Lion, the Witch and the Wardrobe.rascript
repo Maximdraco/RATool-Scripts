@@ -1,6 +1,9 @@
 // Chronicles of Narnia, The: The Lion, the Witch and the Wardrobe
 // #ID = 28384
 // RA Hash = 380582e0d15d448f212a96cb2aba111b (USA version)
+// RA Hash = cf20b8ba8fe25dd983d6723a8837bba8 (Europe version)
+// RA Hash = d2a799dd9f7838b6c99971ce8db988ef (Germany version)
+// RA Hash = 65c135a03fc8f701306a30f6951ba1c7 (French version)
 
 // == Functions to write logic more similar to the normal toolkit
 
@@ -506,7 +509,7 @@ function collecting_statues_achievements(level){
 // Warning achievement
 achievement(
     title = "WARNING!",
-    description = "None of the achievements will trigger if you use any cheat, and only change the difficulty in the title screen.",
+    description = "None of the achievements will trigger if you use any cheat, and only change the difficulty in the title screen, reset the game if you played any level on Normal.",
     points = 0,
     type = "",
     trigger = (repeated(100, always_true()))

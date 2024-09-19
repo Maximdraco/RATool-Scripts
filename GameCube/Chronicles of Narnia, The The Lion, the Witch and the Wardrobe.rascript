@@ -201,6 +201,8 @@ function Level_ID(region, value) => (Level_ID[region] == value)
 
 function Screen_ID(region, value) => (Screen_ID[region] == value)
 
+function in_game(region) => (DeltaNE(Screen_ID[region], 0xf5) && DeltaNE(Screen_ID[region], 0xf6))
+
 // This logic is to reset all hit counts when the player reset the game
 function Game_reseted(region){return(Screen_ID(region, 0x00) || Screen_ID(region, 0x08))}
 
@@ -228,7 +230,7 @@ function Statues_check_Great_Battle(region) {
 function Shield_counter(region, level_ID){
     Shield_address = byte(Starting_shields_address[region]+(0x04*level_ID))
     
-    return(DeltaE(Shield_address, Amount_of_shield[level_ID]-1)
+    return(DeltaS(Shield_address, Amount_of_shield[level_ID])
            && Shield_address == Amount_of_shield[level_ID]
     )
 }
@@ -413,7 +415,8 @@ function Shield_achievements_logic(region, level_ID){
     return(
         Shield_counter(region, level_ID) &&
         Region_ID_check(region) &&
-        AntiCheat(region)
+        AntiCheat(region) &&
+        in_game(region)
     )
 }
 

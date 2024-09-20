@@ -134,11 +134,13 @@ civilians_red = byte(0x00E000)
 difficulty = byte(0x00FD8C)
 
 playing = (lives > 0x00 &&
-           game_screen == 0xd3) // In-game check
+           (game_screen == 0xd3 || game_screen == 0xe1)) // In-game check
 
 achievement_titles = ["Pachycephalosaurus", "What the hell is this?!",
                       "Bird Up", "Aptenoperissus?",
                       "The Volcano Level", "Is this an Alien?"]
+
+rescued_civilians = byte(0x5068)
 
 // Functions
 function level_complete(level){
@@ -203,7 +205,7 @@ function main_achievements(number){
             title = Title + " [Level 8]", points = 10, type = "",
             description = "Complete Stage " + number + " with Difficulty Level 8.",
             trigger = level_complete(number) &&
-                      difficulty == 8
+                      difficulty == 7
         )
 }
 
@@ -219,25 +221,52 @@ function red_helicopter(number, level_ID,letter, total_civilians){
     )
 }
 
-function blue_helicopter(number, letter){
+function blue_helicopter(number, letter, level_ID){
     achievement(
     title = "No One Left Behind " + letter, points = 10,
     description = "Complete Stage " + number + " with all the Rescue Bonus.",
-    trigger = level_complete(number) &&
-              civilians_blue == 5 &&
-              playing
+    trigger = level_B == level_ID &&
+              DeltaE(level_B, level_ID) &&
+              DeltaS(rescued_civilians, 5) &&
+              rescued_civilians == 5
     )
 }
 
 function invincible(number, letter, level_start_ID){
-    achievement(
-    title = "Invincible " + letter, points = 25,
-    description = "Complete Stage " + number + " deadless.",
-    trigger = level_complete(number) &&
-              playing &&
-              PauseIfUntil(once(level_A == level_start_ID) && DeltaB(lives, lives),
-                           game_screen != 0xe1 && game_screen != 0xd3)
-    )
+    if (number != 6){
+        if (number != 1){
+            achievement(
+            title = "Invincible " + letter, points = 25,
+            description = "Complete Stage " + number + " deadless.",
+            trigger = level_complete(number) &&
+                      ResetIf(game_screen != 0xe1 &&
+                              game_screen != 0xd3) &&
+                      PauseIfUntil(DeltaB(lives, lives),
+                                   level_complete(number-1))
+            )
+        }
+        else{
+            achievement(
+            title = "Invincible " + letter, points = 25,
+            description = "Complete Stage " + number + " deadless.",
+            trigger = level_complete(number) &&
+                      PauseIfUntil(DeltaB(lives, lives),
+                                   game_screen != 0xe1 &&
+                                   game_screen != 0xd3)
+            )
+        }
+    }
+    else{
+        achievement(
+        title = "Invincible " + letter, points = 25,
+        description = "Complete Stage " + number + " deadless.",
+        trigger = level_complete(number) &&
+                  PauseIfUntil(once(level_A == level_start_ID) &&
+                               DeltaB(lives, lives),
+                               game_screen != 0xe1 &&
+                               game_screen != 0xd3)
+        )
+    }
 }
 
 // Achievement logic
@@ -253,10 +282,10 @@ red_helicopter(2, 0x26a, "II", 30)
 red_helicopter(4, 0x2543, "III", 30)
 red_helicopter(5, 0x5666, "IV", 30)
 
-blue_helicopter(1, "I")
-blue_helicopter(2, "II")
-blue_helicopter(4, "III")
-blue_helicopter(5, "IV")
+blue_helicopter(1, "I", 0x3333)
+blue_helicopter(2, "II", 0x20c6)
+blue_helicopter(4, "III", 0x2543)
+blue_helicopter(5, "IV", 0x5666)
 
 invincible(1, "I", 0x00)
 invincible(2, "II", 0x1864)
@@ -269,7 +298,6 @@ achievement(
     title = "Untouchable", points = 50,
     description = "Complete the game deadless.",
     trigger = level_complete(6) &&
-              playing &&
               PauseIfUntil(DeltaB(lives, lives),
                            game_screen != 0xe1 && game_screen != 0xd3
                           )

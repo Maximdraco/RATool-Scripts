@@ -52,3 +52,12 @@ function AddSourceDeltaChain(array) {
     
     return (return_logic == length(array)-1)
 }
+
+// Use as a not in for conditionals, value is the value to compare and array is the array with elements that you want to exclude
+function not_in(element, array){
+    i = true
+    for x in array{
+        i = i && element != x
+    }
+    return i
+}
